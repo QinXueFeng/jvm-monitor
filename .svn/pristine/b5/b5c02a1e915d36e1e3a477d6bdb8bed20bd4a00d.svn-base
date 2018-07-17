@@ -1,7 +1,0 @@
-SET NAMES utf8;
-
--- base on V-0.5
-
--- 2017-01-21
-ALTER TABLE system_setting add clean_monitor_log_frequency INT(11)      DEFAULT 30;
-
