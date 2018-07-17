@@ -1,0 +1,47 @@
+package com.andaily.service.operation.instance;
+
+import com.andaily.domain.application.ThreadInstance;
+import com.andaily.domain.application.ThreadInstanceRepository;
+import com.andaily.domain.dto.application.ThreadInstanceDto;
+import com.andaily.domain.dto.application.ThreadInstanceListDto;
+import com.andaily.domain.shared.BeanProvider;
+import com.andaily.domain.shared.paginated.PaginatedLoader;
+
+import java.util.List;
+import java.util.Map;
+
+/**
+ * 2015/9/22
+ *
+ * @author Shengzhao Li
+ */
+public class ThreadInstanceListDtoLoader {
+
+    private transient ThreadInstanceRepository instanceRepository = BeanProvider.getBean(ThreadInstanceRepository.class);
+
+    private ThreadInstanceListDto listDto;
+
+    public ThreadInstanceListDtoLoader(ThreadInstanceListDto listDto) {
+        this.listDto = listDto;
+    }
+
+    public ThreadInstanceListDto load() {
+
+        final Map<String, Object> map = listDto.queryMap();
+
+        listDto.load(new PaginatedLoader<ThreadInstanceDto>() {
+            @Override
+            public List<ThreadInstanceDto> loadList() {
+                List<ThreadInstance> instances = instanceRepository.findThreadInstanceList(map);
+                return ThreadInstanceDto.toDtos(instances);
+            }
+
+            @Override
+            public int loadTotalSize() {
+                return instanceRepository.totalThreadInstanceList(map);
+            }
+        });
+
+        return listDto;
+    }
+}

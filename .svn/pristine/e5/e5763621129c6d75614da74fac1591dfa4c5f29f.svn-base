@@ -1,0 +1,90 @@
+package com.andaily.domain.dto.application;
+
+import com.andaily.domain.application.ApplicationInstanceURL;
+import com.andaily.domain.application.ThreadInstance;
+import com.andaily.domain.application.HeartBeatFrequency;
+import com.andaily.domain.application.InstanceMonitorURLParameter;
+import com.andaily.infrastructure.HttpClientHandler;
+
+import org.apache.http.entity.ContentType;
+
+import java.util.ArrayList;
+import java.util.List;
+
+/**
+ * 15-1-4
+ *
+ * @author qxf
+ */
+public class ThreadInstanceFormDto extends ThreadInstanceDto {
+
+
+    private static final long serialVersionUID = 6377318702441859115L;
+    private List<InstanceMonitorURLParameterDto> urlParameters = new ArrayList<>();
+
+    private List<String> weixinUserGuids = new ArrayList<>();
+
+    public ThreadInstanceFormDto() {
+        super();
+        //set default max connection time 60
+        this.maxConnectionSeconds = 60;
+    }
+
+    public ThreadInstanceFormDto(ThreadInstance instance) {
+        super(instance);
+
+        initialURL(instance);
+    }
+
+    private void initialURL(ThreadInstance instance) {
+        final ApplicationInstanceURL instanceURL = instance.instanceURL();
+        for (InstanceMonitorURLParameter urlParameter : instanceURL.urlParameters()) {
+            this.urlParameters.add(new InstanceMonitorURLParameterDto(urlParameter));
+        }
+    }
+
+    public List<String> getWeixinUserGuids() {
+        return weixinUserGuids;
+    }
+
+    public void setWeixinUserGuids(List<String> weixinUserGuids) {
+        this.weixinUserGuids = weixinUserGuids;
+    }
+
+
+    public List<InstanceMonitorURLParameterDto> getUrlParameters() {
+        return urlParameters;
+    }
+
+    public int getUrlParametersSize() {
+        return urlParameters.size();
+    }
+
+    public void setUrlParameters(List<InstanceMonitorURLParameterDto> urlParameters) {
+        this.urlParameters = urlParameters;
+    }
+
+
+    public HeartBeatFrequency[] getFrequencies() {
+        return HeartBeatFrequency.values();
+    }
+
+
+    public List<ContentType> getContentTypes() {
+        return HttpClientHandler.CONTENT_TYPES;
+    }
+
+
+    public ThreadInstance updateDomain(ThreadInstance instance) {
+        instance.instanceURL().contentType(contentType);
+        return instance.instanceName(instanceName).threadName(threadName)
+                .monitorUrl(monitorUrl)
+                .privateInstance(privateInstance)
+                .requestMethod(requestMethod)
+                .continueFailedTimes(continueFailedTimes)
+                .maxConnectionSeconds(maxConnectionSeconds)
+                .email(email)
+                .frequency(frequency)
+                .remark(remark);
+    }
+}

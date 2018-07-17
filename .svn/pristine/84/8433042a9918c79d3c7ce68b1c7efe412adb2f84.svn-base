@@ -1,0 +1,86 @@
+package com.andaily.service.operation.job;
+
+import com.andaily.domain.log.LogRepository;
+import com.andaily.domain.shared.Application;
+import com.andaily.domain.shared.BeanProvider;
+import com.andaily.infrastructure.DateUtils;
+import com.andaily.infrastructure.mail.MailTransmitter;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import java.util.Date;
+
+/**
+ * 2017/1/21
+ * <p/>
+ * 自动清理过期的监控日志
+ *
+ * @author Shengzhao Li
+ */
+public class AutoMonitorLogCleaner {
+
+    private static final Logger LOG = LoggerFactory.getLogger(AutoMonitorLogCleaner.class);
+
+
+    private transient LogRepository logRepository = BeanProvider.getBean(LogRepository.class);
+
+
+    public AutoMonitorLogCleaner() {
+    }
+
+
+    /**
+     * 处理 自动清理 监控日志的逻辑
+     *
+     * @return 清理成功的数据数量
+     */
+    public long clean() {
+
+        long cleanedAmount = 0;
+        long start = System.currentTimeMillis();
+
+        Date date = getCleanedTime();
+
+        /*
+        * 处理MonitoringReminderLog
+        * */
+
+        cleanedAmount += cleanMonitoringReminderLogs(date);
+
+        /*
+        * 处理 FrequencyMonitorLog
+        * */
+        cleanedAmount += cleanFrequencyMonitorLogs(date);
+
+        LOG.debug("HB finished auto clean monitor logs, cost time: {}, cleanedAmount: {}", (System.currentTimeMillis() - start), cleanedAmount);
+        return cleanedAmount;
+    }
+
+    private Date getCleanedTime() {
+        //final int cleanFrequency = Application.systemSetting().cleanMonitorLogFrequency();
+        //获取具体的时间点, 之前的清除
+        Date date = DateUtils.plusDays(DateUtils.now(), -MailTransmitter.logSaveTime);
+        LOG.debug("HB will clean the monitor logs before the date: {},frequency: {}", date, MailTransmitter.logSaveTime);
+        return date;
+    }
+
+    private long cleanMonitoringReminderLogs(Date date) {
+        long reminderLogAmount = logRepository.amountOfMonitoringReminderLogsBeforeDate(date);
+        if (reminderLogAmount > 0) {
+            logRepository.deleteMonitoringReminderLogsBeforeDate(date);
+            LOG.debug("Cleaned {} MonitoringReminderLogs the createTime before: {}", reminderLogAmount, date);
+        }
+        return reminderLogAmount;
+    }
+
+    private long cleanFrequencyMonitorLogs(Date date) {
+        long monitorAmount = logRepository.amountOfFrequencyMonitorLogsBeforeDate(date);
+        if (monitorAmount > 0) {
+            logRepository.deleteFrequencyMonitorLogsBeforeDate(date);
+            LOG.debug("Cleaned {} FrequencyMonitorLog the createTime before: {}", monitorAmount, date);
+        }
+        return monitorAmount;
+    }
+
+}

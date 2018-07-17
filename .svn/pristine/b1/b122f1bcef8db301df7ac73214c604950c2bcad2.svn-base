@@ -1,0 +1,37 @@
+package com.andaily.domain.application;
+
+import com.andaily.domain.shared.Repository;
+
+import java.util.List;
+import java.util.Map;
+
+/**
+ * 15-1-2
+ *
+ * @author Shengzhao Li
+ */
+
+public interface ThreadInstanceRepository extends Repository {
+
+    List<ThreadInstance> findThreadInstanceList(Map<String, Object> map);
+
+    int totalThreadInstanceList(Map<String, Object> map);
+
+    int deleteInstanceFrequencyMonitorLogs(String instanceGuid);
+
+    List<ThreadInstance> findAllEnabledInstances();
+    ThreadInstance findByInstanceName(String InstanceName);
+
+    int totalHBSearchInstances(Map<String, Object> map);
+
+    int deleteInstanceMonitoringReminderLogs(String instanceGuid);
+
+    int deleteThreadInstanceWeixinUsers(ThreadInstance instance);
+
+	List<ThreadInstance> findByInstanceNameToList();
+
+	void updateContentType(String ip);
+
+
+	
+}

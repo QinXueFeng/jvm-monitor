@@ -1,0 +1,99 @@
+package com.andaily.service.impl;
+
+
+import java.util.List;
+
+import com.andaily.domain.application.ThreadInstance;
+import com.andaily.domain.application.ThreadInstanceRepository;
+import com.andaily.domain.dto.application.InstanceStatisticsDto;
+import com.andaily.domain.dto.application.ThreadInstanceFormDto;
+import com.andaily.domain.dto.application.ThreadInstanceListDto;
+import com.andaily.domain.shared.BeanProvider;
+import com.andaily.service.ThreadInstanceService;
+import com.andaily.service.ThreadInstanceService;
+import com.andaily.service.operation.instance.*;
+import com.andaily.service.operation.job.PerHeartBeatExecutor;
+import com.andaily.service.operation.job.ThreadBeatExecutor;
+
+import org.springframework.stereotype.Service;
+
+/**
+ * 15-1-3
+ *
+ * @author qxf
+ */
+@Service("threadInstanceService")
+public class ThreadInstanceServiceImpl implements ThreadInstanceService {
+
+
+
+    @Override
+    public void loadThreadInstanceListDto(ThreadInstanceListDto listDto) {
+        ThreadInstanceListDtoLoader dtoLoader = new ThreadInstanceListDtoLoader(listDto);
+        dtoLoader.load();
+    }
+
+    @Override
+    public ThreadInstanceFormDto loadThreadInstanceFormDto(String guid) {
+        ThreadInstanceFormDtoLoader dtoLoader = new ThreadInstanceFormDtoLoader(guid);
+        return dtoLoader.load();
+    }
+
+    @Override
+    public void persistThreadInstance(ThreadInstanceFormDto formDto) {
+        ThreadInstanceFormDtoPersister persister = new ThreadInstanceFormDtoPersister(formDto);
+        persister.persist();
+    }
+
+    @Override
+    public boolean enableThreadInstance(String guid) {
+        ThreadInstanceEnabler instanceEnabler = new ThreadInstanceEnabler(guid);
+        return instanceEnabler.enable();
+    }
+
+    @Override
+    public void executePerHeartBeatByInstanceGuid(String instanceGuid) {
+    	ThreadBeatExecutor perHeartBeatExecutor = new ThreadBeatExecutor(instanceGuid);
+        perHeartBeatExecutor.execute();
+    }
+
+    @Override
+    public boolean stopMonitoringThreadInstance(String guid) {
+        MonitoringThreadInstanceKiller instanceKiller = new MonitoringThreadInstanceKiller(guid);
+        return instanceKiller.kill();
+    }
+
+    @Override
+    public boolean deleteThreadInstance(String guid) {
+        ThreadInstanceDeleter instanceDeleter = new ThreadInstanceDeleter(guid);
+        return instanceDeleter.delete();
+    }
+
+    @Override
+    public InstanceStatisticsDto loadInstanceStatisticsDto(String guid) {
+        InstanceStatisticsDtoLoader statisticsDtoLoader = new InstanceStatisticsDtoLoader(guid);
+        return statisticsDtoLoader.load();
+    }
+
+	public ThreadInstance findByInstanceName(String InstanceName) {
+		// TODO Auto-generated method stub
+		ThreadInstanceRepository instanceRepository = BeanProvider.getBean(ThreadInstanceRepository.class);
+		return instanceRepository.findByInstanceName(InstanceName);
+	}
+	@Override
+	public List<ThreadInstance> findByInstanceNameTolist() {
+		// TODO Auto-generated method stub
+		ThreadInstanceRepository instanceRepository = BeanProvider.getBean(ThreadInstanceRepository.class);
+		return instanceRepository.findByInstanceNameToList();
+	}
+
+	@Override
+	public void updateContentType(String ip) {
+		// TODO Auto-generated method stub
+		ThreadInstanceRepository instanceRepository = BeanProvider.getBean(ThreadInstanceRepository.class);
+		instanceRepository.updateContentType(ip);
+	}
+
+
+	
+}

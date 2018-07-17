@@ -1,0 +1,79 @@
+package com.andaily.web;
+ 
+import java.io.IOException;
+import java.util.HashMap;
+import java.util.Map;
+ 
+
+
+import javax.servlet.Filter;
+import javax.servlet.FilterChain;
+import javax.servlet.FilterConfig;
+import javax.servlet.ServletException;
+import javax.servlet.ServletRequest;
+import javax.servlet.ServletResponse;
+import javax.servlet.http.Cookie;
+import javax.servlet.http.HttpServletRequest;
+ 
+
+
+import org.jasig.cas.client.util.AbstractCasFilter;
+import org.jasig.cas.client.validation.Assertion;
+ 
+/** 
+ * @author xiaoxiao 
+ * 日期：2013-7-30 下午3:05:21 
+ * The default character set is UTF-8.
+ */
+ 
+public class AutoSetUserAdapterFilter  implements Filter {
+	/**
+	 * 过滤逻辑：首先判断单点登录的账户是否已经存在本系统中， 如果不存在使用用户查询接口查询出用户对象并设置在Session中
+	 * 
+	 * @see Filter#doFilter(ServletRequest, ServletResponse, FilterChain)
+	 */
+	public void doFilter(ServletRequest request, ServletResponse response,
+			FilterChain chain) throws IOException, ServletException {
+		HttpServletRequest httpRequest = (HttpServletRequest) request;
+		//Map<String, Cookie> cookieMap = ReadCookieMap(httpRequest);
+		// _const_cas_assertion_是CAS中存放登录用户名的session标志
+		Object object = httpRequest.getSession().getAttribute(
+				AbstractCasFilter.CONST_CAS_ASSERTION);
+		HttpServletRequest req = (HttpServletRequest)request; 
+        String reqURI = req.getRequestURI();
+        if(reqURI.indexOf("/system/updateOrNew")!=-1){
+        }else{
+		if (object != null) {
+			Assertion assertion = (Assertion) object;
+			Map<String, Object> map = assertion.getPrincipal().getAttributes();
+			//System.out.println(map);
+			String loginName = assertion.getPrincipal().getName();
+			//System.out.println("用户已经在SSO系统中登录，登录用户名为:" + loginName);
+			String user = getCurrentUser(httpRequest);
+ 
+			// 第一次登录系统
+			if (user == null) {
+				//System.out.println("用户第一次登录系统,保存session信息.");
+				httpRequest.getSession().setAttribute("User_Info", loginName);
+			} else {
+				//System.out.println("当前Session中的用户信息为:" + user);
+			}
+ 
+		}}
+		chain.doFilter(request, response);
+	}
+	
+	private String getCurrentUser(HttpServletRequest request) {
+		return (String) request.getSession().getAttribute("User_Info");
+	}
+ 
+	public void init(FilterConfig filterConfig) throws ServletException {
+		// TODO Auto-generated method stub
+		
+	}
+ 
+	public void destroy() {
+		// TODO Auto-generated method stub
+		
+	}
+}

@@ -1,0 +1,99 @@
+package com.andaily.domain.log.reminder;
+
+import com.andaily.domain.application.ThreadInstance;
+import com.andaily.domain.dto.application.ThreadInstanceFormDto;
+import com.andaily.domain.log.FrequencyMonitorLog;
+import com.andaily.domain.log.LogRepository;
+import com.andaily.domain.log.MonitoringReminderLog;
+import com.andaily.domain.shared.BeanProvider;
+import com.andaily.infrastructure.DateUtils;
+import com.andaily.infrastructure.hibernate.AbstractRepositoryHibernate;
+
+import org.hibernate.Session;
+import org.hibernate.SessionFactory;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.util.Assert;
+
+import java.util.Date;
+import java.util.List;
+
+/**
+ * 每一次监控的提醒 操作
+ *
+ * @author Shengzhao Li
+ */
+public class ThreadReminder extends Thread {
+	@Autowired
+    private SessionFactory sessionFactory;
+
+    
+    public void afterPropertiesSet() throws Exception {
+        Assert.notNull(sessionFactory, "SessionFactory is required!");
+    }
+
+    protected Session session() {
+        return sessionFactory.getCurrentSession();
+    }
+    private static final Logger LOGGER = LoggerFactory.getLogger(ThreadReminder.class);
+
+    private transient LogRepository logRepository = BeanProvider.getBean(LogRepository.class);
+  
+    private final FrequencyMonitorLog monitorLog;
+
+    public ThreadReminder(FrequencyMonitorLog monitorLog) {
+        this.monitorLog = monitorLog;
+    }
+
+    public void remind() {
+        this.run();
+    }
+
+    @Override
+    public void run() {
+    	
+        if (!isNeedReminder()) {
+            LOGGER.debug("Ignore Monitoring Reminder of FrequencyMonitorLog[{}]", monitorLog);
+            logRepository.saveBySql("insert into frequency_monitor_log (guid,create_time,normal,cost_time,remark,thread_id,log_type)values("
+            		+ "'"+monitorLog.guid()+"','"+DateUtils.toDateText(new Date(),"yyyy-MM-dd HH:mm:ss")+"','1','"+monitorLog.costTime()+"','"+monitorLog.remark()+"','"+monitorLog.instance().id()+"','thread')");
+            return;
+        }
+        MonitoringReminderLog reminderLog = sendAndGenerateReminderLog();
+        LOGGER.debug("Ignore Monitoring Reminder of FrequencyMonitorLog[{}]", monitorLog);
+        logRepository.saveBySql("insert into frequency_monitor_log (guid,create_time,normal,cost_time,remark,thread_id,log_type)values("
+        		+ "'"+monitorLog.guid()+"','"+DateUtils.toDateText(new Date(),"yyyy-MM-dd HH:mm:ss")+"','0','"+monitorLog.costTime()+"','"+monitorLog.remark()+"','"+monitorLog.instance().id()+"','thread')");
+        logRepository.saveBySql("insert into monitoring_reminder_log (guid,create_time,instance_id,monitor_log_id,change_normal,receive_email,log_type)values("
+        		+ "'"+reminderLog.guid()+"','"+DateUtils.toDateText(new Date(),"yyyy-MM-dd HH:mm:ss")+"','"+reminderLog.instance().id()+"','"+reminderLog.monitorLog().id()+"','"+(reminderLog.changeNormal()==false?0:1)+"','"+reminderLog.receiveEmail()+"','thread')");
+        
+        LOGGER.debug("Save MonitoringReminderLog[{}]", reminderLog);
+    }
+    
+    private MonitoringReminderLog sendAndGenerateReminderLog() {
+        PerMonitoringReminderSenderResolver senderResolver = new PerMonitoringReminderSenderResolver(monitorLog);
+        List<PerMonitoringReminderSender> senders = senderResolver.resolve();
+        LOGGER.debug("Resolver [{}] PerMonitoringReminderSenders as follow: {}", senders.size(), senders);
+
+        MonitoringReminderLog reminderLog = new MonitoringReminderLog(monitorLog);
+        for (PerMonitoringReminderSender sender : senders) {
+            sender.send(reminderLog, monitorLog);
+        }
+        return reminderLog;
+    }
+
+
+    /**
+     * 判断是否需要进行提醒
+     *
+     * @return True is need reminder
+     */
+    private boolean isNeedReminder() {
+        String str=monitorLog.instance().instanceURL().contentType();
+        if("1".equals(str)){
+        	return true;
+        }else{
+        	return false;
+        }
+        //return reminderChecker.isNeedReminder();
+    }
+}

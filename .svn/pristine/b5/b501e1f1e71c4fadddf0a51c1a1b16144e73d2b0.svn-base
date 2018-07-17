@@ -1,0 +1,107 @@
+package com.andaily.infrastructure.hibernate;
+
+import com.andaily.domain.application.ThreadInstance;
+import com.andaily.domain.application.ThreadInstanceRepository;
+import com.andaily.domain.log.FrequencyMonitorLog;
+import com.andaily.infrastructure.hibernate.queryhelper.impl.HBSearchInstancesQueryHelper;
+import com.andaily.infrastructure.hibernate.queryhelper.impl.ThreadInstanceListQueryHelper;
+import com.google.common.collect.ImmutableMap;
+
+import org.hibernate.Query;
+import org.hibernate.Session;
+import org.hibernate.SessionFactory;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Repository;
+import org.springframework.util.Assert;
+
+import java.util.List;
+import java.util.Map;
+
+/**
+ * @author Shengzhao Li
+ */
+@Repository("ThreadInstanceRepository")
+public class ThreadInstanceRepositoryHibernate extends AbstractRepositoryHibernate<ThreadInstance> implements ThreadInstanceRepository {
+	
+
+    @Override
+    public List<ThreadInstance> findThreadInstanceList(Map<String, Object> map) {
+        ThreadInstanceListQueryHelper queryHelper = new ThreadInstanceListQueryHelper(session(), map);
+        return queryHelper.getResults();
+    }
+
+    @Override
+    public int totalThreadInstanceList(Map<String, Object> map) {
+        ThreadInstanceListQueryHelper queryHelper = new ThreadInstanceListQueryHelper(session(), map);
+        return queryHelper.getAmount();
+    }
+
+
+    @Override
+    public int deleteInstanceFrequencyMonitorLogs(String instanceGuid) {
+        final List<FrequencyMonitorLog> list = find("from FrequencyMonitorLog ml where ml.instance.guid = :instanceGuid", ImmutableMap.of("instanceGuid", instanceGuid));
+        deleteAll(list);
+        return list.size();
+    }
+
+    @Override
+    public List<ThreadInstance> findAllEnabledInstances() {
+        String hql = " from ThreadInstance ai where ai.archived = false and ai.enabled = true";
+        return find(hql);
+    }
+
+
+    @Override
+    public int totalHBSearchInstances(Map<String, Object> map) {
+        HBSearchInstancesQueryHelper queryHelper = new HBSearchInstancesQueryHelper(session(), map);
+        return queryHelper.getAmount();
+    }
+
+    @Override
+    public int deleteInstanceMonitoringReminderLogs(String instanceGuid) {
+        final List<FrequencyMonitorLog> list = find("from MonitoringReminderLog ml where ml.instance.guid = :instanceGuid", ImmutableMap.of("instanceGuid", instanceGuid));
+        deleteAll(list);
+        return list.size();
+    }
+
+    @Override
+    public int deleteThreadInstanceWeixinUsers(ThreadInstance instance) {
+       
+        return 1;
+    }
+
+	@Override
+	public ThreadInstance findByInstanceName(String InstanceName) {
+		final List<ThreadInstance> list = find(" from ThreadInstance ai where   ai.instanceName= '"+InstanceName+"'");
+		if(list.size()>0){
+			return list.get(0);
+		}else{
+			return null;
+		}
+	}
+	@Override
+	public List<ThreadInstance> findByInstanceNameToList() {
+		final List<ThreadInstance> list = find(" from ThreadInstance ai where  ai.enabled = '0' ");
+		return list;
+	}
+
+	@Override
+	public synchronized void  updateContentType(String ip) {
+		// TODO Auto-generated method stub
+		String sql="";
+		if(ip.indexOf(".")!=-1){
+			sql="update thread_instance set content_type='1' where monitor_url like '%"+ip+"%'";
+		}else{
+			sql="update thread_instance set content_type='0' where guid = '"+ip+"'";
+		}
+		Query query =session().createSQLQuery(sql);
+		//System.out.print(ip+"==");
+		query.executeUpdate();	
+    	
+	}
+
+	
+
+	
+	
+}

@@ -1,0 +1,53 @@
+package com.andaily.service.operation.instance;
+
+import com.andaily.domain.application.ThreadInstance;
+import com.andaily.domain.application.ThreadInstanceRepository;
+import com.andaily.domain.dto.application.ThreadInstanceFormDto;
+import com.andaily.domain.shared.BeanProvider;
+import org.apache.commons.lang.StringUtils;
+
+/**
+ * 2016/5/17
+ *
+ * @author Shengzhao Li
+ */
+public class ThreadInstanceFormDtoLoader {
+
+
+    private transient ThreadInstanceRepository instanceRepository = BeanProvider.getBean(ThreadInstanceRepository.class);
+   
+
+    private String guid;
+
+    public ThreadInstanceFormDtoLoader(String guid) {
+        this.guid = guid;
+    }
+
+    public ThreadInstanceFormDto load() {
+
+        ThreadInstanceFormDto formDto;
+
+        if (StringUtils.isNotEmpty(guid)) {
+            formDto = loadFormDto();
+        } else {
+            formDto = new ThreadInstanceFormDto();
+        }
+
+        //final List<WeixinUser> weixinUsers = userRepository.findWeixinUsersByUsername(SecurityUtils.currentUsername());
+      //  formDto.setWeixinUserDtos(WeixinUserDto.toDtos(weixinUsers));
+
+        return formDto;
+    }
+
+    private ThreadInstanceFormDto loadFormDto() {
+        ThreadInstance instance = instanceRepository.findByGuid(guid, ThreadInstance.class);
+        if (instance.enabled()) {
+            throw new IllegalStateException("Only Disabled ThreadInstance support edit");
+        }
+        ThreadInstanceFormDto formDto = new ThreadInstanceFormDto(instance);
+
+       // List<String> weixinUserGuids = userRepository.findWeixinUserGuids(instance.guid());
+       // formDto.setWeixinUserGuids(weixinUserGuids);
+        return formDto;
+    }
+}
